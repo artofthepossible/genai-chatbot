@@ -1,3 +1,10 @@
+#environment:
+  #VAULT_ADDR: https://portal.cloud.hashicorp.com/orgs/5984a0a3-14eb-4bfb-b0ec-0ecca6b93d0b
+  #VLT_APPLICATION_NAME1: pinecone
+  #VLT_APPLICATION_NAME2: openai
+  #OPENAI_TOKEN: vlt secrets get --app-name="openai" --plaintext apikey # Replace your-api-key with your personal API key
+  #PINECONE_TOKEN: vlt secrets get --app-name="pinecone" --plaintext apikey
+
 services:
   bot:
     build:

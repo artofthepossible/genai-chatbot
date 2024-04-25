@@ -1,0 +1,71 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - "main"g
+
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ secrets.ORGANIZATION}}/${{ secrets.IMAGE_NAME }}  
+  IMAGE: demonstrationorg/dbc-cloud-build:v1
+  SHA: ${{ github.event.pull_request.head.sha || github.event.after }} 
+  # Use `latest` as the tag to compare to if empty, assuming that it's already pushed
+  COMPARE_TAG: latest
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{github.event_name }} event."
+      - run: echo "🐧 This job is now running!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: Checkout
+        uses: actions/checkout@v4
+      - run: echo "✅ Checkout status is ${{ job.status }}."
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - run: echo "✅ Log in to Docker Hub  status is ${{ job.status }}."
+
+      - name: Set up Docker Build Cloud se-cloud-builder Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: "lab:latest"
+          driver: cloud
+          endpoint: "salestestorg/se-cloud-builder"
+      - run: echo "✅ Set up Docker Build Cloud se-cloud-builder Buildx status is ${{ job.status }}."
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.revision=${{ env.SHA }}
+          tags: |
+            type=edge,branch=$repo.default_branch
+            type=semver,pattern=v{{version}}
+            type=sha,prefix=,suffix=,format=short
+      - run: echo "✅ Extract Docker metadata status is ${{ job.status }}."
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          #load: false
+          #push: true
+          # tags: ${{ env.IMAGE_NAME }}
+          tags: ${{ steps.meta.outputs.tags }}
+          # For pull requests, export results to the build cache.
+          # Otherwise, push to a registry.
+          outputs: ${{ github.event_name == 'pull_request' && 'type=cacheonly' || 'type=registry,push=true' }}
+      - run: echo "✅ Build and pushx status is ${{ job.status }}."
+  
